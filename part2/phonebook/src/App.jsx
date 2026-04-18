@@ -1,24 +1,21 @@
 import { useEffect, useState } from "react";
-import axios from "axios";
 import Filter from "./components/Filter";
 import PersonForm from "./components/PersonForm";
 import Persons from "./components/Persons";
+import personService from "./services/persons";
+import Notification from "./components/Notification";
 
 const App = () => {
   const [persons, setPersons] = useState([]);
   const [newName, setNewName] = useState("");
   const [newNumber, setNewNumber] = useState("");
   const [filter, setFilter] = useState("");
+  const [message, setMessage] = useState(null);
+  const [messageType, setMessageType] = useState("error");
 
-  const hook = () => {
-    console.log("effect started");
-    
-    axios
-      .get("http://localhost:3001/persons")
-      .then((response) => setPersons(response.data));
-  };
-
-  useEffect(hook, []);
+  useEffect(() => {
+    personService.getAll().then((returnedPerson) => setPersons(returnedPerson));
+  }, []);
 
   const handleNameChange = (event) => {
     setNewName(event.target.value);
@@ -43,19 +40,76 @@ const App = () => {
     // don't add person with same name or same number
     const samePerson = persons.find(
       (person) =>
-        person.name === trimmedName || person.number === trimmedNumber,
+        person.name === trimmedName && person.number === trimmedNumber,
     );
     if (samePerson) {
-      alert(
-        `${samePerson.name} ${samePerson.number} is already added to phonebook`,
+      setMessageType("error");
+      setMessage(
+        `"${samePerson.name} ${samePerson.number}" is already added to phonebook`,
       );
+      setTimeout(() => setMessage(null), 5000);
       return;
     }
+
+    const personWithSameName = persons.find(
+      (person) => person.name === trimmedName,
+    );
+
     // add new person
-    setPersons([
-      ...persons,
-      { name: trimmedName, number: trimmedNumber, id: persons.length + 1 },
-    ]);
+    const newObject = { name: trimmedName, number: trimmedNumber };
+
+    // don't add person with same name and different number, update
+    if (personWithSameName) {
+      if (
+        window.confirm(
+          `${personWithSameName.name} is already added, replace the old number?`,
+        )
+      ) {
+        personService
+          .updateNumber(personWithSameName.id, newObject)
+          .then((returnedPerson) => {
+            setPersons(
+              persons.map((p) =>
+                p.id === personWithSameName.id ? returnedPerson : p,
+              ),
+            );
+            setMessageType("success");
+            setMessage(
+              `Number of "${personWithSameName.name}" is changed to ${returnedPerson.number} from ${personWithSameName.number}`,
+            );
+            setTimeout(() => setMessage(null), 5000);
+          })
+          .catch((error) => {
+            setMessageType("error");
+            setMessage(
+              `this person "${personWithSameName.name}" already been removed from server`,
+            );
+            setPersons(persons.filter((p) => personWithSameName.id !== p.id));
+          });
+      }
+      return;
+    }
+
+    personService.create(newObject).then((returnedPerson) => {
+      setPersons([...persons, returnedPerson]);
+      setMessageType("success");
+      setMessage(
+        `added new person name: "${returnedPerson.name}" number: "${returnedPerson.number}"`,
+      );
+    });
+  };
+
+  const handleDeleteClick = (id) => {
+    const deletingPerson = persons.find((p) => p.id === id);
+
+    if (window.confirm("Delete?")) {
+      personService.remove(id).then(() => {
+        setPersons(persons.filter((p) => p.id !== id));
+        setMessageType("success");
+        setMessage(`deleted "${deletingPerson.name}" `);
+        setTimeout(() => setMessage(null), 5000);
+      });
+    }
   };
 
   // search input logic for filtering
@@ -70,6 +124,7 @@ const App = () => {
   return (
     <div>
       <h2>phonebook</h2>
+      <Notification message={message} messageType={messageType} />
       <Filter onChange={handleFilterChange} />
       <h3>add a new</h3>
       <PersonForm
@@ -78,7 +133,7 @@ const App = () => {
         onNumberChange={handleNumberChange}
       />
       <h3>Numbers</h3>
-      <Persons contacts={contacts} />
+      <Persons contacts={contacts} onClick={handleDeleteClick} />
     </div>
   );
 };
