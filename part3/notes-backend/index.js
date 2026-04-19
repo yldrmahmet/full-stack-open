@@ -1,9 +1,6 @@
 const express = require("express");
+const cors = require("cors");
 const app = express();
-
-// middleware
-// Content-type = application/json => JSON.parse()
-app.use(express.json());
 
 // data
 let notes = [
@@ -23,6 +20,27 @@ let notes = [
     important: true,
   },
 ];
+
+const requestLogger = (request, response, next) => {
+  console.log("Method", request.method);
+  console.log("Path", request.path);
+  console.log("Body", request.body);
+  console.log("---");
+  next();
+};
+
+// middlewares
+
+// 1.cors
+app.use(cors());
+
+// 2. Content-type = application/json => JSON.parse()
+app.use(express.json());
+
+// 3. log
+app.use(requestLogger);
+
+// endpoints
 
 // api homepage
 app.get("/", (request, response) => {
@@ -81,5 +99,5 @@ app.post("/api/notes", (request, response) => {
   response.json(notes);
 });
 
-const PORT = 3001;
+const PORT = process.env.PORT || 3001;
 app.listen(PORT, () => console.log(`server running on port ${PORT}`));
