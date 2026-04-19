@@ -34,6 +34,9 @@ const requestLogger = (request, response, next) => {
 // 1.cors
 app.use(cors());
 
+// 2. 
+app.use(express.static("dist"));
+
 // 2. Content-type = application/json => JSON.parse()
 app.use(express.json());
 
