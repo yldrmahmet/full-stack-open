@@ -3,6 +3,9 @@ const morgan = require("morgan");
 const app = express();
 app.use(express.json());
 
+// fetch frontend files
+app.use(express.static("dist"));
+
 // log middleware
 morgan.token("body", (req) => JSON.stringify(req.body));
 app.use(
