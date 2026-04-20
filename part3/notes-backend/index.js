@@ -1,5 +1,4 @@
 const express = require("express");
-const cors = require("cors");
 const app = express();
 
 // data
@@ -31,10 +30,7 @@ const requestLogger = (request, response, next) => {
 
 // middlewares
 
-// 1.cors
-app.use(cors());
-
-// 2. 
+// 1. fetch frontend files
 app.use(express.static("dist"));
 
 // 2. Content-type = application/json => JSON.parse()
