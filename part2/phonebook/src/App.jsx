@@ -81,22 +81,28 @@ const App = () => {
           })
           .catch((error) => {
             setMessageType("error");
-            setMessage(
-              `this person "${personWithSameName.name}" already been removed from server`,
-            );
-            setPersons(persons.filter((p) => personWithSameName.id !== p.id));
+            setMessage(error.response.data.error);
+            setTimeout(() => setMessage(null), 5000);
           });
       }
       return;
     }
 
-    personService.create(newObject).then((returnedPerson) => {
-      setPersons([...persons, returnedPerson]);
-      setMessageType("success");
-      setMessage(
-        `added new person name: "${returnedPerson.name}" number: "${returnedPerson.number}"`,
-      );
-    });
+    personService
+      .create(newObject)
+      .then((returnedPerson) => {
+        setPersons([...persons, returnedPerson]);
+        setMessageType("success");
+        setMessage(
+          `added new person name: "${returnedPerson.name}" number: "${returnedPerson.number}"`,
+        );
+        setTimeout(() => setMessage(null), 5000);
+      })
+      .catch((error) => {
+        setMessageType("error");
+        setMessage(error.response.data.error);
+        setTimeout(() => setMessage(null), 5000);
+      });
   };
 
   const handleDeleteClick = (id) => {
