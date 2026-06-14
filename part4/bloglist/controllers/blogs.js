@@ -10,7 +10,7 @@ blogsRouter.get('/', (request, response, next) => {
     .catch((error) => next(error))
 })
 
-// create one blog 
+// create one blog
 blogsRouter.post('/', (request, response, next) => {
   const blog = new Blog(request.body)
   blog
