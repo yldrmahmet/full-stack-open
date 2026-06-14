@@ -42,8 +42,6 @@ const mostLikes = (blogs) => {
     return counts
   }, {})
 
-  console.log(counts)
-
   const best = Object.entries(counts).reduce((best,author) => {
     if(author[1] > best[1]) return author
     return best
