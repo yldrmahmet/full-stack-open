@@ -6,12 +6,12 @@
   "author": "Ahmet Yıldırım",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
     "start": "node index.js",
     "dev": "node --watch index.js",
     "build:ui": "rm -rf dist && cd ../../part2/notes && npm run build && cp -r dist ../../part3/notes-backend",
     "deploy:full": "npm run build:ui && git add . && git commit -m uibuild && git push",
-    "lint": "eslint ."
+    "lint": "eslint .",
+    "test": "cross-env NODE_ENV=test node --test"
   },
   "dependencies": {
     "dotenv": "^17.4.2",
@@ -21,7 +21,9 @@
   "devDependencies": {
     "@eslint/js": "^10.0.1",
     "@stylistic/eslint-plugin": "^5.10.0",
+    "cross-env": "^10.1.0",
     "eslint": "^10.4.1",
-    "globals": "^17.6.0"
+    "globals": "^17.6.0",
+    "supertest": "^7.2.2"
   }
 }
