@@ -1,7 +1,7 @@
 const notesRouter = require('express').Router()
 const Note = require('../models/note')
 
-// endpoints
+// all endpoints in one file
 
 // get all notes
 notesRouter.get('/', async (request, response) => {
@@ -37,21 +37,19 @@ notesRouter.post('/', async (request, response) => {
 })
 
 // update one note
-notesRouter.put('/:id', (request, response, next) => {
+notesRouter.put('/:id', async (request, response) => {
   const { content, important } = request.body
 
-  Note.findById(request.params.id)
-    .then((note) => {
-      if (!note) {
-        return response.status(404).end()
-      }
+  const note = await Note.findById(request.params.id)
 
-      note.content = content
-      note.important = important
+  if (!note) {
+    return response.status(404).end()
+  }
+  note.content = content
+  note.important = important
 
-      return note.save().then((updatedNote) => response.json(updatedNote))
-    })
-    .catch((error) => next(error))
+  const savedNote = await note.save()
+  response.json(savedNote)
 })
 
 module.exports = notesRouter
