@@ -1,9 +1,0 @@
-POST http://localhost:3003/api/blogs/ HTTP/1.1
-content-type: application/json
-
-{
-    "title": "Be a Full Stack Web Developer",
-    "author": "Team FSO",
-    "url": "https://fullstackopen.com/en/about/",
-    "likes": 0
-}
