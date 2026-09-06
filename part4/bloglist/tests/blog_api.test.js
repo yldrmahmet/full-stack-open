@@ -18,6 +18,7 @@ test('blogs are returned as json', async () => {
     .get('/api/blogs')
     .expect(200)
     .expect('Content-Type', /application\/json/)
+
   assert.strictEqual(blogs.body.length, helper.initialBlogs.length)
 })
 
@@ -27,7 +28,11 @@ test('blog is identified by a field named id', async () => {
     .expect(200)
     .expect('Content-Type', /application\/json/)
   const blog = blogs.body[0]
+
+  // blog must have an id
   assert(blog.id)
+
+  // blog must not have _id because toJSON renames _id to id
   assert(!blog._id)
 })
 
@@ -69,7 +74,6 @@ test('if likes property is missing, it will default to the value 0', async () =>
   assert.strictEqual(blogsAtEnd.length, helper.initialBlogs.length + 1)
 
   const addedBlog = blogsAtEnd.find((blog) => blog.id === postResponse.body.id)
-
   assert.strictEqual(addedBlog.likes, 0)
 })
 
@@ -97,6 +101,43 @@ test('if title or url missing, respond is 400', async () => {
     .send(noUrlBlog)
     .expect(400)
     .expect('Content-Type', /application\/json/)
+})
+
+test('succeeds with status code 204 if id is valid', async () => {
+  const blogsAtStart = await helper.blogsInDb()
+  const blogToDelete = blogsAtStart[0]
+
+  await api.delete(`/api/blogs/${blogToDelete.id}`).expect(204)
+
+  const blogsAtEnd = await helper.blogsInDb()
+
+  const ids = blogsAtEnd.map((n) => n.id)
+  assert(!ids.includes(blogToDelete.id))
+
+  assert.strictEqual(blogsAtEnd.length, helper.initialBlogs.length - 1)
+})
+
+test('succeeds with valid data when update of a note', async () => {
+  const blogsAtStart = await helper.blogsInDb()
+  const blogToUpdate = blogsAtStart[0]
+  const newBlog = {
+    title: blogToUpdate.title,
+    author: blogToUpdate.author,
+    url: blogToUpdate.url,
+    likes: blogToUpdate.likes + 1,
+  }
+
+  await api
+    .put(`/api/blogs/${blogToUpdate.id}`)
+    .send(newBlog)
+    .expect(200)
+    .expect('Content-Type', /application\/json/)
+
+  const blogsAtEnd = await helper.blogsInDb()
+  const updatedBlog = blogsAtEnd.find((blog) => blog.id === blogToUpdate.id)
+
+  assert.strictEqual(updatedBlog.likes, newBlog.likes)
+  assert.strictEqual(blogsAtStart.length, blogsAtEnd.length)
 })
 
 after(async () => {
