@@ -13,15 +13,16 @@
     "test": "cross-env NODE_ENV=test node --test"
   },
   "dependencies": {
+    "bcrypt": "^6.0.0",
     "cross-env": "^10.1.0",
     "dotenv": "^17.4.2",
     "express": "^5.2.1",
     "mongoose": "^9.7.0"
   },
   "devDependencies": {
-    "@eslint/js": "^10.0.1",
+    "@eslint/js": "^9.39.5",
     "@stylistic/eslint-plugin": "^5.10.0",
-    "eslint": "^10.4.1",
+    "eslint": "^9.39.5",
     "globals": "^17.6.0",
     "supertest": "^7.2.2"
   }
