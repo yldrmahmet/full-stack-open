@@ -3,11 +3,8 @@ const assert = require('node:assert')
 const mongoose = require('mongoose')
 const supertest = require('supertest')
 const app = require('../app')
-const bcrypt = require('bcrypt')
 const Note = require('../models/note')
-const User = require('../models/user')
 const helper = require('./test_helper')
-
 
 const api = supertest(app)
 
@@ -66,6 +63,19 @@ describe('viewing a specific note', () => {
 })
 
 describe('addition of a new note', () => {
+  let token
+
+  beforeEach(async () => {
+    await helper.resetUsersWithRoot()
+
+    const response = await api
+      .post('/api/login')
+      .send({ username: 'root', password: 'sekret' })
+      .expect(200)
+      .expect('Content-Type', /application\/json/)
+    token = response.body.token
+  })
+
   test('succeeds with valid data', async () => {
     const newNote = {
       content: 'async/await simplifies making async calls',
@@ -74,6 +84,7 @@ describe('addition of a new note', () => {
 
     await api
       .post('/api/notes')
+      .set('Authorization', `Bearer ${token}`)
       .send(newNote)
       .expect(201)
       .expect('Content-Type', /application\/json/)
@@ -90,7 +101,11 @@ describe('addition of a new note', () => {
       important: true,
     }
 
-    await api.post('/api/notes').send(newNote).expect(400)
+    await api
+      .post('/api/notes')
+      .set('Authorization', `Bearer ${token}`)
+      .send(newNote)
+      .expect(400)
 
     const notesAtEnd = await helper.notesInDb()
 
@@ -140,12 +155,7 @@ describe('update of a note', () => {
 
 describe('when there is initially one user in db', () => {
   beforeEach(async () => {
-    await User.deleteMany({})
-
-    const passwordHash = await bcrypt.hash('sekret', 10)
-    const user = new User({ username: 'root', passwordHash })
-
-    await user.save()
+    await helper.resetUsersWithRoot()
   })
 
   test('creation succeeds with a fresh username', async () => {
