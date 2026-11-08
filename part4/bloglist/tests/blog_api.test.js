@@ -10,6 +10,7 @@ const api = supertest(app)
 
 beforeEach(async () => {
   await Blog.deleteMany({})
+  await helper.resetUsersWithRoot()
   await Blog.insertMany(helper.initialBlogs)
 })
 
@@ -138,6 +139,108 @@ test('succeeds with valid data when update of a note', async () => {
 
   assert.strictEqual(updatedBlog.likes, newBlog.likes)
   assert.strictEqual(blogsAtStart.length, blogsAtEnd.length)
+})
+
+test('check short username (less than 3 letters)', async () => {
+  const usersAtStart = await helper.usersInDb()
+  const userWithShortUsername = {
+    username: 'aa', password: '12345'
+  }
+
+  const result = await api
+    .post('/api/users/')
+    .send(userWithShortUsername)
+    .expect(400)
+    .expect('Content-Type', /application\/json/)
+
+  const usersAtEnd = await helper.usersInDb()
+
+  const newUser = usersAtEnd.find(user => user.username === 'aa')
+  assert(!newUser)
+  assert(result.body.error.includes('User validation failed: username: Path `username`'))
+  assert(result.body.error.includes('is shorter than the minimum allowed length'))
+  assert.strictEqual(usersAtEnd.length, usersAtStart.length)
+})
+
+test('creation fails with proper statuscode and message if username already taken', async () => {
+  const usersAtStart = await helper.usersInDb()
+  const userWithSameUsername = {
+    username: 'root', password: '12345'
+  }
+
+  const result = await api
+    .post('/api/users/')
+    .send(userWithSameUsername)
+    .expect(400)
+    .expect('Content-Type', /application\/json/)
+
+  const usersAtEnd = await helper.usersInDb()
+
+  const rootUsers = usersAtEnd.filter(user => user.username === 'root')
+  assert.strictEqual(rootUsers.length, 1)
+  assert(result.body.error.includes('expected `username` to be unique'))
+  assert.strictEqual(usersAtEnd.length, usersAtStart.length)
+})
+
+test('check no username', async () => {
+  const usersAtStart = await helper.usersInDb()
+  const userWithNoUsername = {
+    name: 'ahmet yildirim',
+    password: '12345'
+  }
+
+  const result = await api
+    .post('/api/users/')
+    .send(userWithNoUsername)
+    .expect(400)
+    .expect('Content-Type', /application\/json/)
+
+  const usersAtEnd = await helper.usersInDb()
+
+  const newUser = usersAtEnd.find(user => user.name === 'ahmet yildirim')
+  assert(!newUser)
+  assert(result.body.error.includes('User validation failed: username: Path `username` is required.'))
+  assert.strictEqual(usersAtEnd.length, usersAtStart.length)
+})
+
+test('check short password (less than 3 letters)', async () => {
+  const usersAtStart = await helper.usersInDb()
+  const userWithShortPassword = {
+    username: 'ahmet', password: '12'
+  }
+
+  const result = await api
+    .post('/api/users/')
+    .send(userWithShortPassword)
+    .expect(400)
+    .expect('Content-Type', /application\/json/)
+
+  const usersAtEnd = await helper.usersInDb()
+
+  const newUser = usersAtEnd.find(user => user.username === 'ahmet')
+  assert(!newUser)
+  assert(result.body.error.includes('password must be at least 3 characters long'))
+  assert.strictEqual(usersAtEnd.length, usersAtStart.length)
+})
+
+test('check no password', async () => {
+  const usersAtStart = await helper.usersInDb()
+  const userWithNoPassword = {
+    username: 'ahmet'
+  }
+
+  const result = await api
+    .post('/api/users/')
+    .send(userWithNoPassword)
+    .expect(400)
+    .expect('Content-Type', /application\/json/)
+
+  const usersAtEnd = await helper.usersInDb()
+
+  const newUser = usersAtEnd.find(user => user.username === 'ahmet')
+  assert(!newUser)
+  assert(result.body.error.includes('password is required'))
+  assert.strictEqual(usersAtEnd.length, usersAtStart.length)
 })
 
 after(async () => {

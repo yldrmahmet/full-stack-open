@@ -2,9 +2,9 @@ POST http://localhost:8001/api/users/ HTTP/1.1
 content-type: application/json
 
 {
-    "username": "kralcan",
+    "username": "ahmet",
     "name": "ahmetcan yildirim",
-    "password": "password"
+    "password": "12345"
 }
 
 ### get all users
