@@ -30,6 +30,5 @@ describe('mostBlogs', () => {
     ]
 
     assert.deepStrictEqual(mostBlogs(blogPosts), { author: 'fso team', blogs: 2 })
-
   })
 })

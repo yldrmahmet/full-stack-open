@@ -13,7 +13,6 @@ const favoriteBlog = (blogs) => {
 
 // The function returns the author who has the largest amount of blogs
 const mostBlogs = (blogs) => {
-
   if(blogs.length < 1) return {}
 
   const counts = blogs.reduce((counts, blog) => {
@@ -31,7 +30,6 @@ const mostBlogs = (blogs) => {
 }
 
 const mostLikes = (blogs) => {
-
   if(blogs.length < 1) return {}
 
   const counts = blogs.reduce((counts, blog) => {
@@ -46,7 +44,6 @@ const mostLikes = (blogs) => {
   })
 
   return { author: best[0], likes: best[1] }
-
 }
 
 module.exports = { totalLikes, favoriteBlog, mostBlogs, mostLikes }

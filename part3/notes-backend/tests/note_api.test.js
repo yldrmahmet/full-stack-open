@@ -14,8 +14,6 @@ beforeEach(async () => {
 })
 
 describe('when there is initially some notes saved', () => {
-
-
   test('notes are returned as json', async () => {
     await api
       .get('/api/notes')
@@ -200,7 +198,6 @@ describe('when there is initially one user in db', () => {
 
     assert.strictEqual(usersAtEnd.length, usersAtStart.length)
   })
-
 })
 
 after(async () => {

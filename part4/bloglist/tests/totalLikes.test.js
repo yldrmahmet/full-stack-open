@@ -12,7 +12,6 @@ describe('total likes', () => {
     }]
 
     assert.strictEqual(totalLikes(blogPost), 20)
-
   })
 
   test('two blog posts', () => {
@@ -32,6 +31,5 @@ describe('total likes', () => {
     ]
 
     assert.strictEqual(totalLikes(blogPosts), 35)
-
   })
 })
