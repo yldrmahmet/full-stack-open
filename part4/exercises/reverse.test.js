@@ -1,7 +1,7 @@
 const { test, describe } = require('node:test')
 const assert = require('node:assert')
 
-const reverse = require('../utils/for_testing').reverse
+const reverse = require('./for_testing').reverse
 
 describe('reverse', () => {
   test('reverse of a', () => {

@@ -1,3 +1,5 @@
+const dummy = (blogs) => 1
+
 const reverse = (string) => {
   return string
     .split('')
@@ -15,4 +17,4 @@ const average = (array) => {
     : array.reduce(reducer, 0) / array.length
 }
 
-module.exports = { reverse, average }
+module.exports = { dummy, reverse, average }
