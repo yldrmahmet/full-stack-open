@@ -10,6 +10,7 @@ const api = supertest(app)
 
 beforeEach(async () => {
   await Blog.deleteMany({})
+  await helper.resetUsersWithRoot()
   await Blog.insertMany(helper.initialBlogs)
 })
 
