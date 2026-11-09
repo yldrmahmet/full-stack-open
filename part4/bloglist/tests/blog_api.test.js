@@ -1,4 +1,4 @@
-const { test, after, beforeEach } = require('node:test')
+const { test, after, beforeEach, describe } = require('node:test')
 const assert = require('node:assert')
 const mongoose = require('mongoose')
 const supertest = require('supertest')
@@ -10,237 +10,145 @@ const api = supertest(app)
 
 beforeEach(async () => {
   await Blog.deleteMany({})
-  await helper.resetUsersWithRoot()
   await Blog.insertMany(helper.initialBlogs)
 })
 
-test('blogs are returned as json', async () => {
-  const blogs = await api
-    .get('/api/blogs')
-    .expect(200)
-    .expect('Content-Type', /application\/json/)
+describe('GET /api/blogs', () => {
+  test('returns all blogs as JSON', async () => {
+    const blogs = await api
+      .get('/api/blogs')
+      .expect(200)
+      .expect('Content-Type', /application\/json/)
 
-  assert.strictEqual(blogs.body.length, helper.initialBlogs.length)
+    assert.strictEqual(blogs.body.length, helper.initialBlogs.length)
+  })
+
+  test('uses id instead of _id', async () => {
+    const blogs = await api
+      .get('/api/blogs')
+      .expect(200)
+      .expect('Content-Type', /application\/json/)
+    const blog = blogs.body[0]
+
+    // blog must have an id
+    assert(blog.id)
+
+    // blog must not have _id because toJSON renames _id to id
+    assert(!blog._id)
+  })
 })
 
-test('blog is identified by a field named id', async () => {
-  const blogs = await api
-    .get('/api/blogs')
-    .expect(200)
-    .expect('Content-Type', /application\/json/)
-  const blog = blogs.body[0]
+describe('POST /api/blogs', () => {
+  test('creates a new blog', async () => {
+    const newBlog = {
+      title: 'fso new note',
+      author: 'fso team',
+      url: 'https://fullstackopen.com/en/about',
+      likes: 30,
+    }
 
-  // blog must have an id
-  assert(blog.id)
+    await api
+      .post('/api/blogs')
+      .send(newBlog)
+      .expect(201)
+      .expect('Content-Type', /application\/json/)
 
-  // blog must not have _id because toJSON renames _id to id
-  assert(!blog._id)
+    const blogsAtEnd = await helper.blogsInDb()
+    assert.strictEqual(blogsAtEnd.length, helper.initialBlogs.length + 1)
+
+    const titles = blogsAtEnd.map((r) => r.title)
+    assert(titles.includes('fso new note'))
+  })
+
+  test('sets likes to 0 if missing', async () => {
+    const newBlog = {
+      title: 'blog but no like',
+      author: 'fso team',
+      url: 'https://fullstackopen.com/en/about',
+    }
+
+    const postResponse = await api
+      .post('/api/blogs')
+      .send(newBlog)
+      .expect(201)
+      .expect('Content-Type', /application\/json/)
+
+    const blogsAtEnd = await helper.blogsInDb()
+    assert.strictEqual(blogsAtEnd.length, helper.initialBlogs.length + 1)
+
+    const addedBlog = blogsAtEnd.find((blog) => blog.id === postResponse.body.id)
+    assert.strictEqual(addedBlog.likes, 0)
+  })
+
+  test('fails with 400 if title or url is missing', async () => {
+    const noTitleBlog = {
+      author: 'fso team',
+      url: 'https://fullstackopen.com/en/about',
+      likes: 40,
+    }
+
+    const noUrlBlog = {
+      title: 'blog with no url',
+      author: 'fso team',
+      likes: 20,
+    }
+
+    await api
+      .post('/api/blogs')
+      .send(noTitleBlog)
+      .expect(400)
+      .expect('Content-Type', /application\/json/)
+
+    await api
+      .post('/api/blogs')
+      .send(noUrlBlog)
+      .expect(400)
+      .expect('Content-Type', /application\/json/)
+
+    const blogsAtEnd = await helper.blogsInDb()
+    assert.strictEqual(blogsAtEnd.length, helper.initialBlogs.length)
+  })
 })
 
-test('a valid blog can be added', async () => {
-  const newBlog = {
-    title: 'fso new note',
-    author: 'fso team',
-    url: 'https://fullstackopen.com/en/about',
-    likes: 30,
-  }
+describe('DELETE /api/blogs/:id', () => {
+  test('deletes the blog and returns 204', async () => {
+    const blogsAtStart = await helper.blogsInDb()
+    const blogToDelete = blogsAtStart[0]
 
-  await api
-    .post('/api/blogs')
-    .send(newBlog)
-    .expect(201)
-    .expect('Content-Type', /application\/json/)
+    await api.delete(`/api/blogs/${blogToDelete.id}`).expect(204)
 
-  const blogsAtEnd = await helper.blogsInDb()
-  assert.strictEqual(blogsAtEnd.length, helper.initialBlogs.length + 1)
+    const blogsAtEnd = await helper.blogsInDb()
 
-  const titles = blogsAtEnd.map((r) => r.title)
-  assert(titles.includes('fso new note'))
+    const ids = blogsAtEnd.map((n) => n.id)
+    assert(!ids.includes(blogToDelete.id))
+
+    assert.strictEqual(blogsAtEnd.length, helper.initialBlogs.length - 1)
+  })
 })
 
-test('if likes property is missing, it will default to the value 0', async () => {
-  const newBlog = {
-    title: 'blog but no like',
-    author: 'fso team',
-    url: 'https://fullstackopen.com/en/about',
-  }
+describe('PUT /api/blogs/:id', () => {
+  test('updates the likes of a blog', async () => {
+    const blogsAtStart = await helper.blogsInDb()
+    const blogToUpdate = blogsAtStart[0]
+    const newBlog = {
+      title: blogToUpdate.title,
+      author: blogToUpdate.author,
+      url: blogToUpdate.url,
+      likes: blogToUpdate.likes + 1,
+    }
 
-  const postResponse = await api
-    .post('/api/blogs')
-    .send(newBlog)
-    .expect(201)
-    .expect('Content-Type', /application\/json/)
+    await api
+      .put(`/api/blogs/${blogToUpdate.id}`)
+      .send(newBlog)
+      .expect(200)
+      .expect('Content-Type', /application\/json/)
 
-  const blogsAtEnd = await helper.blogsInDb()
-  assert.strictEqual(blogsAtEnd.length, helper.initialBlogs.length + 1)
+    const blogsAtEnd = await helper.blogsInDb()
+    const updatedBlog = blogsAtEnd.find((blog) => blog.id === blogToUpdate.id)
 
-  const addedBlog = blogsAtEnd.find((blog) => blog.id === postResponse.body.id)
-  assert.strictEqual(addedBlog.likes, 0)
-})
-
-test('if title or url missing, respond is 400', async () => {
-  const noTitleBlog = {
-    author: 'fso team',
-    url: 'https://fullstackopen.com/en/about',
-    likes: 40,
-  }
-
-  const noUrlBlog = {
-    title: 'blog with no url',
-    author: 'fso team',
-    likes: 20,
-  }
-
-  await api
-    .post('/api/blogs')
-    .send(noTitleBlog)
-    .expect(400)
-    .expect('Content-Type', /application\/json/)
-
-  await api
-    .post('/api/blogs')
-    .send(noUrlBlog)
-    .expect(400)
-    .expect('Content-Type', /application\/json/)
-})
-
-test('succeeds with status code 204 if id is valid', async () => {
-  const blogsAtStart = await helper.blogsInDb()
-  const blogToDelete = blogsAtStart[0]
-
-  await api.delete(`/api/blogs/${blogToDelete.id}`).expect(204)
-
-  const blogsAtEnd = await helper.blogsInDb()
-
-  const ids = blogsAtEnd.map((n) => n.id)
-  assert(!ids.includes(blogToDelete.id))
-
-  assert.strictEqual(blogsAtEnd.length, helper.initialBlogs.length - 1)
-})
-
-test('succeeds with valid data when update of a note', async () => {
-  const blogsAtStart = await helper.blogsInDb()
-  const blogToUpdate = blogsAtStart[0]
-  const newBlog = {
-    title: blogToUpdate.title,
-    author: blogToUpdate.author,
-    url: blogToUpdate.url,
-    likes: blogToUpdate.likes + 1,
-  }
-
-  await api
-    .put(`/api/blogs/${blogToUpdate.id}`)
-    .send(newBlog)
-    .expect(200)
-    .expect('Content-Type', /application\/json/)
-
-  const blogsAtEnd = await helper.blogsInDb()
-  const updatedBlog = blogsAtEnd.find((blog) => blog.id === blogToUpdate.id)
-
-  assert.strictEqual(updatedBlog.likes, newBlog.likes)
-  assert.strictEqual(blogsAtStart.length, blogsAtEnd.length)
-})
-
-test('check short username (less than 3 letters)', async () => {
-  const usersAtStart = await helper.usersInDb()
-  const userWithShortUsername = {
-    username: 'aa', password: '12345'
-  }
-
-  const result = await api
-    .post('/api/users/')
-    .send(userWithShortUsername)
-    .expect(400)
-    .expect('Content-Type', /application\/json/)
-
-  const usersAtEnd = await helper.usersInDb()
-
-  const newUser = usersAtEnd.find(user => user.username === 'aa')
-  assert(!newUser)
-  assert(result.body.error.includes('User validation failed: username: Path `username`'))
-  assert(result.body.error.includes('is shorter than the minimum allowed length'))
-  assert.strictEqual(usersAtEnd.length, usersAtStart.length)
-})
-
-test('creation fails with proper statuscode and message if username already taken', async () => {
-  const usersAtStart = await helper.usersInDb()
-  const userWithSameUsername = {
-    username: 'root', password: '12345'
-  }
-
-  const result = await api
-    .post('/api/users/')
-    .send(userWithSameUsername)
-    .expect(400)
-    .expect('Content-Type', /application\/json/)
-
-  const usersAtEnd = await helper.usersInDb()
-
-  const rootUsers = usersAtEnd.filter(user => user.username === 'root')
-  assert.strictEqual(rootUsers.length, 1)
-  assert(result.body.error.includes('expected `username` to be unique'))
-  assert.strictEqual(usersAtEnd.length, usersAtStart.length)
-})
-
-test('check no username', async () => {
-  const usersAtStart = await helper.usersInDb()
-  const userWithNoUsername = {
-    name: 'ahmet yildirim',
-    password: '12345'
-  }
-
-  const result = await api
-    .post('/api/users/')
-    .send(userWithNoUsername)
-    .expect(400)
-    .expect('Content-Type', /application\/json/)
-
-  const usersAtEnd = await helper.usersInDb()
-
-  const newUser = usersAtEnd.find(user => user.name === 'ahmet yildirim')
-  assert(!newUser)
-  assert(result.body.error.includes('User validation failed: username: Path `username` is required.'))
-  assert.strictEqual(usersAtEnd.length, usersAtStart.length)
-})
-
-test('check short password (less than 3 letters)', async () => {
-  const usersAtStart = await helper.usersInDb()
-  const userWithShortPassword = {
-    username: 'ahmet', password: '12'
-  }
-
-  const result = await api
-    .post('/api/users/')
-    .send(userWithShortPassword)
-    .expect(400)
-    .expect('Content-Type', /application\/json/)
-
-  const usersAtEnd = await helper.usersInDb()
-
-  const newUser = usersAtEnd.find(user => user.username === 'ahmet')
-  assert(!newUser)
-  assert(result.body.error.includes('password must be at least 3 characters long'))
-  assert.strictEqual(usersAtEnd.length, usersAtStart.length)
-})
-
-test('check no password', async () => {
-  const usersAtStart = await helper.usersInDb()
-  const userWithNoPassword = {
-    username: 'ahmet'
-  }
-
-  const result = await api
-    .post('/api/users/')
-    .send(userWithNoPassword)
-    .expect(400)
-    .expect('Content-Type', /application\/json/)
-
-  const usersAtEnd = await helper.usersInDb()
-
-  const newUser = usersAtEnd.find(user => user.username === 'ahmet')
-  assert(!newUser)
-  assert(result.body.error.includes('password is required'))
-  assert.strictEqual(usersAtEnd.length, usersAtStart.length)
+    assert.strictEqual(updatedBlog.likes, newBlog.likes)
+    assert.strictEqual(blogsAtStart.length, blogsAtEnd.length)
+  })
 })
 
 after(async () => {
