@@ -40,6 +40,17 @@ describe('GET /api/blogs', () => {
 })
 
 describe('POST /api/blogs', () => {
+  let token
+
+  beforeEach(async () => {
+    const response = await api
+      .post('/api/login')
+      .send({ username: 'root', password: 'sekret' })
+      .expect(200)
+      .expect('Content-Type', /application\/json/)
+    token = response.body.token
+  })
+
   test('creates a new blog', async () => {
     const newBlog = {
       title: 'fso new note',
@@ -50,6 +61,7 @@ describe('POST /api/blogs', () => {
 
     await api
       .post('/api/blogs')
+      .set('Authorization', `Bearer ${token}`)
       .send(newBlog)
       .expect(201)
       .expect('Content-Type', /application\/json/)
@@ -70,6 +82,7 @@ describe('POST /api/blogs', () => {
 
     const postResponse = await api
       .post('/api/blogs')
+      .set('Authorization', `Bearer ${token}`)
       .send(newBlog)
       .expect(201)
       .expect('Content-Type', /application\/json/)
@@ -96,18 +109,39 @@ describe('POST /api/blogs', () => {
 
     await api
       .post('/api/blogs')
+      .set('Authorization', `Bearer ${token}`)
       .send(noTitleBlog)
       .expect(400)
       .expect('Content-Type', /application\/json/)
 
     await api
       .post('/api/blogs')
+      .set('Authorization', `Bearer ${token}`)
       .send(noUrlBlog)
       .expect(400)
       .expect('Content-Type', /application\/json/)
 
     const blogsAtEnd = await helper.blogsInDb()
     assert.strictEqual(blogsAtEnd.length, helper.initialBlogs.length)
+  })
+
+  test('fails with 401 if token is missing', async () => {
+    const newBlog = {
+      title: 'fso new note but no token',
+      author: 'fso team',
+      url: 'https://fullstackopen.com/en/about',
+      likes: 50,
+    }
+
+    const result = await api
+      .post('/api/blogs')
+      .send(newBlog)
+      .expect(401)
+      .expect('Content-Type', /application\/json/)
+
+    const blogsAtEnd = await helper.blogsInDb()
+    assert.strictEqual(blogsAtEnd.length, helper.initialBlogs.length)
+    assert.strictEqual(result.body.error, 'token invalid')
   })
 })
 
