@@ -7,11 +7,19 @@ const Blog = require('../models/blog')
 const helper = require('./test_helper')
 
 const api = supertest(app)
+let token
 
 beforeEach(async () => {
   await Blog.deleteMany({})
   await helper.resetUsersWithRoot()
   await Blog.insertMany(helper.initialBlogs)
+
+  const response = await api
+    .post('/api/login')
+    .send({ username: 'root', password: 'sekret' })
+    .expect(200)
+    .expect('Content-Type', /application\/json/)
+  token = response.body.token
 })
 
 describe('GET /api/blogs', () => {
@@ -40,17 +48,6 @@ describe('GET /api/blogs', () => {
 })
 
 describe('POST /api/blogs', () => {
-  let token
-
-  beforeEach(async () => {
-    const response = await api
-      .post('/api/login')
-      .send({ username: 'root', password: 'sekret' })
-      .expect(200)
-      .expect('Content-Type', /application\/json/)
-    token = response.body.token
-  })
-
   test('creates a new blog', async () => {
     const newBlog = {
       title: 'fso new note',
@@ -146,18 +143,43 @@ describe('POST /api/blogs', () => {
 })
 
 describe('DELETE /api/blogs/:id', () => {
+  let response
+  beforeEach(async () => {
+    const newBlog = {
+      title: 'fso new note',
+      author: 'fso team',
+      url: 'https://fullstackopen.com/en/about',
+      likes: 30,
+    }
+
+    response = await api
+      .post('/api/blogs')
+      .set('Authorization', `Bearer ${token}`)
+      .send(newBlog)
+      .expect(201)
+      .expect('Content-Type', /application\/json/)
+  })
+
   test('deletes the blog and returns 204', async () => {
     const blogsAtStart = await helper.blogsInDb()
-    const blogToDelete = blogsAtStart[0]
+    const blogToDelete = response.body
+    const usersAtStart = await helper.usersInDb()
+    const userAtStart = usersAtStart.find(user => user.username === 'root')
 
-    await api.delete(`/api/blogs/${blogToDelete.id}`).expect(204)
+    await api
+      .delete(`/api/blogs/${blogToDelete.id}`)
+      .set('Authorization', `Bearer ${token}`)
+      .expect(204)
 
     const blogsAtEnd = await helper.blogsInDb()
+    const usersAtEnd = await helper.usersInDb()
+    const userAtEnd = usersAtEnd.find(user => user.username === 'root')
 
-    const ids = blogsAtEnd.map((n) => n.id)
+    const ids = blogsAtEnd.map((blog) => blog.id)
     assert(!ids.includes(blogToDelete.id))
 
-    assert.strictEqual(blogsAtEnd.length, helper.initialBlogs.length - 1)
+    assert.strictEqual(blogsAtEnd.length, blogsAtStart.length - 1)
+    assert.strictEqual(userAtEnd.blogs.length, userAtStart.blogs.length - 1)
   })
 })
 
