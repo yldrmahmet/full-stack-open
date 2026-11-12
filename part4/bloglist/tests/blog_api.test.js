@@ -7,7 +7,14 @@ const Blog = require('../models/blog')
 const helper = require('./test_helper')
 
 const api = supertest(app)
+
 let token
+const newBlog = {
+  title: 'fso new note',
+  author: 'fso team',
+  url: 'https://fullstackopen.com/en/about',
+  likes: 30,
+}
 
 beforeEach(async () => {
   await Blog.deleteMany({})
@@ -49,13 +56,6 @@ describe('GET /api/blogs', () => {
 
 describe('POST /api/blogs', () => {
   test('creates a new blog', async () => {
-    const newBlog = {
-      title: 'fso new note',
-      author: 'fso team',
-      url: 'https://fullstackopen.com/en/about',
-      likes: 30,
-    }
-
     await api
       .post('/api/blogs')
       .set('Authorization', `Bearer ${token}`)
@@ -71,7 +71,7 @@ describe('POST /api/blogs', () => {
   })
 
   test('sets likes to 0 if missing', async () => {
-    const newBlog = {
+    const noLikeBlog = {
       title: 'blog but no like',
       author: 'fso team',
       url: 'https://fullstackopen.com/en/about',
@@ -80,7 +80,7 @@ describe('POST /api/blogs', () => {
     const postResponse = await api
       .post('/api/blogs')
       .set('Authorization', `Bearer ${token}`)
-      .send(newBlog)
+      .send(noLikeBlog)
       .expect(201)
       .expect('Content-Type', /application\/json/)
 
@@ -123,13 +123,6 @@ describe('POST /api/blogs', () => {
   })
 
   test('fails with 401 if token is missing', async () => {
-    const newBlog = {
-      title: 'fso new note but no token',
-      author: 'fso team',
-      url: 'https://fullstackopen.com/en/about',
-      likes: 50,
-    }
-
     const result = await api
       .post('/api/blogs')
       .send(newBlog)
@@ -143,31 +136,25 @@ describe('POST /api/blogs', () => {
 })
 
 describe('DELETE /api/blogs/:id', () => {
-  let response
-  beforeEach(async () => {
-    const newBlog = {
-      title: 'fso new note',
-      author: 'fso team',
-      url: 'https://fullstackopen.com/en/about',
-      likes: 30,
-    }
+  let ownBlog
 
-    response = await api
+  beforeEach(async () => {
+    const response = await api
       .post('/api/blogs')
       .set('Authorization', `Bearer ${token}`)
       .send(newBlog)
       .expect(201)
       .expect('Content-Type', /application\/json/)
+    ownBlog = response.body
   })
 
   test('deletes the blog and returns 204', async () => {
     const blogsAtStart = await helper.blogsInDb()
-    const blogToDelete = response.body
     const usersAtStart = await helper.usersInDb()
     const userAtStart = usersAtStart.find(user => user.username === 'root')
 
     await api
-      .delete(`/api/blogs/${blogToDelete.id}`)
+      .delete(`/api/blogs/${ownBlog.id}`)
       .set('Authorization', `Bearer ${token}`)
       .expect(204)
 
@@ -176,10 +163,36 @@ describe('DELETE /api/blogs/:id', () => {
     const userAtEnd = usersAtEnd.find(user => user.username === 'root')
 
     const ids = blogsAtEnd.map((blog) => blog.id)
-    assert(!ids.includes(blogToDelete.id))
+    assert(!ids.includes(ownBlog.id))
 
     assert.strictEqual(blogsAtEnd.length, blogsAtStart.length - 1)
     assert.strictEqual(userAtEnd.blogs.length, userAtStart.blogs.length - 1)
+  })
+
+  test('fails with 401 if token is missing', async () => {
+    const result = await api
+      .delete(`/api/blogs/${ownBlog.id}`)
+      .expect(401)
+      .expect('Content-Type', /application\/json/)
+
+    const blogsAtEnd = await helper.blogsInDb()
+    assert.strictEqual(blogsAtEnd.length, helper.initialBlogs.length + 1)
+    assert.strictEqual(result.body.error, 'token invalid')
+  })
+
+  test('fails with 403 if not the owner', async () => {
+    const blogsAtStart = await helper.blogsInDb()
+    const blogToDelete = blogsAtStart.find(blog => blog.id !== ownBlog.id)
+
+    const result = await api
+      .delete(`/api/blogs/${blogToDelete.id}`)
+      .set('Authorization', `Bearer ${token}`)
+      .expect(403)
+      .expect('Content-Type', /application\/json/)
+
+    const blogsAtEnd = await helper.blogsInDb()
+    assert.strictEqual(blogsAtEnd.length, helper.initialBlogs.length + 1)
+    assert.strictEqual(result.body.error, 'operation not permitted')
   })
 })
 
@@ -187,7 +200,7 @@ describe('PUT /api/blogs/:id', () => {
   test('updates the likes of a blog', async () => {
     const blogsAtStart = await helper.blogsInDb()
     const blogToUpdate = blogsAtStart[0]
-    const newBlog = {
+    const blogWithUpdate = {
       title: blogToUpdate.title,
       author: blogToUpdate.author,
       url: blogToUpdate.url,
@@ -196,14 +209,14 @@ describe('PUT /api/blogs/:id', () => {
 
     await api
       .put(`/api/blogs/${blogToUpdate.id}`)
-      .send(newBlog)
+      .send(blogWithUpdate)
       .expect(200)
       .expect('Content-Type', /application\/json/)
 
     const blogsAtEnd = await helper.blogsInDb()
     const updatedBlog = blogsAtEnd.find((blog) => blog.id === blogToUpdate.id)
 
-    assert.strictEqual(updatedBlog.likes, newBlog.likes)
+    assert.strictEqual(updatedBlog.likes, blogWithUpdate.likes)
     assert.strictEqual(blogsAtStart.length, blogsAtEnd.length)
   })
 })
