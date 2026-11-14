@@ -20,6 +20,7 @@ const App = () => {
     const updatedLeft = left + 1;
     setLeft(updatedLeft);
     console.log("left after", left);
+    // left still has the old value here, so setTotal(left + right); would be wrong
     setTotal(updatedLeft + right);
   };
 
