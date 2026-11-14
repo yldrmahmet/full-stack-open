@@ -18,7 +18,7 @@ const Statistics = ({ good, neutral, bad }) => {
 
   return (
     <div>
-      <h1>statistics</h1>
+      <h2>statistics</h2>
       {all === 0 ? (
         <p>No feedback given</p>
       ) : (
@@ -29,7 +29,7 @@ const Statistics = ({ good, neutral, bad }) => {
             <StatisticLine text="bad" value={bad} />
             <StatisticLine text="all" value={all} />
             <StatisticLine text="average" value={average} />
-            <StatisticLine text="positive" value={positive} />
+            <StatisticLine text="positive" value={positive + ' %'} />
           </tbody>
         </table>
       )}
