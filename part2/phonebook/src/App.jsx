@@ -77,6 +77,8 @@ const App = () => {
             setMessage(
               `Number of "${personWithSameName.name}" is changed to ${returnedPerson.number} from ${personWithSameName.number}`,
             );
+            setNewName("");
+            setNewNumber("");
             setTimeout(() => setMessage(null), 5000);
           })
           .catch((error) => {
@@ -96,6 +98,8 @@ const App = () => {
         setMessage(
           `added new person name: "${returnedPerson.name}" number: "${returnedPerson.number}"`,
         );
+        setNewName("");
+        setNewNumber("");
         setTimeout(() => setMessage(null), 5000);
       })
       .catch((error) => {
@@ -129,16 +133,18 @@ const App = () => {
 
   return (
     <div>
-      <h2>phonebook</h2>
+      <h1>phonebook</h1>
       <Notification message={message} messageType={messageType} />
-      <Filter onChange={handleFilterChange} />
-      <h3>add a new</h3>
+      <Filter value={filter} onChange={handleFilterChange} />
+      <h2>add a new</h2>
       <PersonForm
+        name={newName}
+        number={newNumber}
         onSubmit={handlePersonClick}
         onNameChange={handleNameChange}
         onNumberChange={handleNumberChange}
       />
-      <h3>Numbers</h3>
+      <h2>Numbers</h2>
       <Persons contacts={contacts} onClick={handleDeleteClick} />
     </div>
   );
