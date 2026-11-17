@@ -27,12 +27,13 @@ const App = () => {
     (filteredCountries.length === 1 ? filteredCountries[0] : null);
 
   useEffect(() => {
-    if (displayCountry) {
-      countryService
-        .getWeather(displayCountry.latlng[0], displayCountry.latlng[1])
-        .then((weatherData) => {
-          setCountryWeather(weatherData);
-        });
+    const latLng = displayCountry?.capitalInfo.latlng
+      ? displayCountry.capitalInfo?.latlng
+      : displayCountry?.latlng;
+    if (latLng) {
+      countryService.getWeather(latLng[0], latLng[1]).then((weatherData) => {
+        setCountryWeather({ cca3: displayCountry.cca3, data: weatherData });
+      });
     }
   }, [displayCountry]);
 
@@ -43,7 +44,6 @@ const App = () => {
   };
 
   const handleShowCountryDetailClick = (country) => {
-    console.log(country);
     setSelectedCountry(country);
   };
 

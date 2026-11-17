@@ -1,17 +1,17 @@
 const CountryList = ({ filteredCountries, onClick }) => {
+  if (filteredCountries.length > 10) {
+    return <p>Too many matches, specify another filter</p>;
+  }
+
   return (
-    <div>
-      {filteredCountries.length > 10 ? (
-        <p>Too many matches, specify another filter</p>
-      ) : (
-        filteredCountries.map((c) => (
-          <li key={c.ccn3}>
-            {c.name.common}
-            <button onClick={() => onClick(c)}>Show</button>
-          </li>
-        ))
-      )}
-    </div>
+    <ul>
+      {filteredCountries.map((c) => (
+        <li key={c.cca3}>
+          {c.name.common}
+          <button onClick={() => onClick(c)}>Show</button>
+        </li>
+      ))}
+    </ul>
   );
 };
 
