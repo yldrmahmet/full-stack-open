@@ -83,7 +83,15 @@ const App = () => {
           })
           .catch((error) => {
             setMessageType("error");
-            setMessage(error.response.data.error);
+            if (error.response.status === 404) {
+              setMessage(
+                `this person "${personWithSameName.name}" has already been removed from server`,
+              );
+              setPersons(persons.filter((p) => personWithSameName.id !== p.id));
+            } else {
+              setMessage(error.response.data.error);
+            }
+
             setTimeout(() => setMessage(null), 5000);
           });
       }
