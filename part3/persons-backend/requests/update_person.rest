@@ -1,0 +1,17 @@
+# @name created
+POST http://localhost:3001/api/persons/ HTTP/1.1
+content-type: application/json
+
+{
+    "name": "test-update",
+    "number": "22-312312312"
+}
+
+###
+PUT http://localhost:3001/api/persons/{{created.response.body.$.id}} HTTP/1.1
+Content-Type: application/json
+
+{
+    "name": "updated-name",
+    "number": "33-132132123"
+}

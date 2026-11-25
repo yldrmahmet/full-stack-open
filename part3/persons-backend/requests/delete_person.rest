@@ -1,0 +1,11 @@
+# @name created
+POST http://localhost:3001/api/persons/ HTTP/1.1
+content-type: application/json
+
+{
+    "name": "test-delete",
+    "number": "22-321321321"
+}
+
+###
+DELETE http://localhost:3001/api/persons/{{created.response.body.$.id}} HTTP/1.1
