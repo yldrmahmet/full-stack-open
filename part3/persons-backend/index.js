@@ -15,20 +15,24 @@ app.use(
 )
 
 // get general info
-app.get('/info', (request, response) => {
-  Person.find({}).then((persons) => {
-    response.send(`
+app.get('/info', (request, response, next) => {
+  Person.countDocuments({})
+    .then((count) => {
+      response.send(`
     <div>
-      <p>Phonebook has info for ${persons.length} people</p>
+      <p>Phonebook has info for ${count} people</p>
       <p>${new Date()}</p>
     </div>
     `)
-  })
+    })
+    .catch((error) => next(error))
 })
 
 // get all persons
-app.get('/api/persons', (request, response) => {
-  Person.find({}).then((persons) => response.json(persons))
+app.get('/api/persons', (request, response, next) => {
+  Person.find({})
+    .then((persons) => response.json(persons))
+    .catch((error) => next(error))
 })
 
 // get one person
@@ -65,13 +69,14 @@ app.post('/api/persons', (request, response, next) => {
 
 // update one person
 app.put('/api/persons/:id', (request, response, next) => {
-  const { number } = request.body
+  const { name, number } = request.body
 
   Person.findById(request.params.id)
     .then((person) => {
       if (!person) {
         return response.status(404).end()
       }
+      person.name = name
       person.number = number
 
       return person

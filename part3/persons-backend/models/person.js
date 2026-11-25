@@ -6,10 +6,12 @@ const url = process.env.MONGODB_URI
 
 mongoose
   .connect(url, { family: 4 })
-  .then(() => console.log('connected to MongoDB'))
-  .catch((error) =>
-    console.log('error connecting to MongoDB: ', error.message),
-  )
+  .then(() => {
+    console.log('connected to MongoDB')
+  })
+  .catch((error) => {
+    console.log('error connecting to MongoDB:', error.message)
+  })
 
 const personSchema = new mongoose.Schema({
   name: {
@@ -20,13 +22,13 @@ const personSchema = new mongoose.Schema({
   number: {
     type: String,
     minLength: 8,
-    maxLength: 15,
     required: true,
     validate: {
       validator: function (value) {
         return /^\d{2,3}-\d+$/.test(value)
       },
-      message: (props) => `${props.value} is not a valid phone number!`,
+      message: () =>
+        'The phone number must be at least 8 characters long and must contain a hyphen after the second or third digit (e.g., 040-6655678).',
     },
   },
 })
