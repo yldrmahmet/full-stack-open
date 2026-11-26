@@ -3,6 +3,10 @@ const assert = require('node:assert')
 const totalLikes = require('../utils/list_helper').totalLikes
 
 describe('total likes', () => {
+  test('of empty list is zero', () => {
+    assert.strictEqual(totalLikes([]), 0)
+  })
+
   test('one blog post', () => {
     const blogPost =[ {
       title: 'fso about',
