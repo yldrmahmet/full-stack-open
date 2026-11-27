@@ -3,7 +3,11 @@ const assert = require('node:assert')
 const favoriteBlog = require('../utils/list_helper').favoriteBlog
 
 describe('favoriteBlog', () => {
-  test('returns the blog with most likes',() => {
+  test('returns an empty object for an empty list', () => {
+    assert.deepStrictEqual(favoriteBlog([]), {})
+  })
+
+  test('returns the blog with most likes', () => {
     const blogPosts = [
       {
         title: 'fso about',
@@ -16,7 +20,7 @@ describe('favoriteBlog', () => {
         author: 'fso team',
         url: 'https://fullstackopen.com/en/faq',
         likes: 15,
-      }
+      },
     ]
 
     const favorite = {

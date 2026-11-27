@@ -5,6 +5,8 @@ const totalLikes = (blogs) => {
 }
 
 const favoriteBlog = (blogs) => {
+  if(blogs.length < 1) return {}
+
   return blogs.reduce((favorite, blog) => {
     if(blog.likes > favorite.likes) return blog
     return favorite
